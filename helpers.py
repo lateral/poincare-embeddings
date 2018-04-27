@@ -6,7 +6,7 @@ BOUNDARY = 1 - EPS
 def pullback(poincare_pts):
     norms = np.sqrt((poincare_pts ** 2).sum(axis=1))
     new_norms = norms.copy()
-    print('%i vectors are on the boundary (they will be pulled back)' % (norms > BOUNDARY).sum())
+    print('%i vectors are on the boundary (they will be pulled back).' % (norms > BOUNDARY).sum())
     new_norms[norms > BOUNDARY] = BOUNDARY
     multipliers = new_norms / norms
     return poincare_pts * multipliers[:,np.newaxis]

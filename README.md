@@ -12,7 +12,11 @@ To achieve burn-in, just train twice, initialising the second time with the vect
 ./poincare -graph wordnet/mammal_closure.tsv -number-negatives 20 -epochs 500 -input-vectors vectors-after-burnin.csv -output-vectors vectors.csv -start-lr 0.5 -end-lr 0.5 -distribution-power 0
 ```
 
-### Installation
+## Requirements
+
+For evaluation of the embeddings, you'll need the Python 3 library scikit-learn.
+
+## Installation
 
 ```
 git clone https://github.com/facebookresearch/poincare-embeddings
@@ -23,7 +27,7 @@ cmake ../
 make
 ```
 
-### Usage
+## Usage
 
 ```
 $ ./poincare
@@ -43,10 +47,27 @@ $ ./poincare
                                   n.b. only deterministic if single threaded!
 ```
 
-### Training data
+## Training data
 
 Training data is a two-column tab-separated CSV file without header.  The training files for the  WordNet hypernymy hierarchy and its mammal subtree and included in the `wordnet` folder.  These were derived as per the [implementation of the authors](https://github.com/facebookresearch/poincare-embeddings).
 
-### Output format
+## Output format
 
 Vectors are written out as a spaced-separated CSV without header, where the first column is the name of the node.
+
+## Evaluation
+
+The script `evaluate` measures the performance of the trained embeddings:
+
+```
+$ ./evaluate --graph wordnet/noun_closure.tsv --vectors build/vectors.csv --sample-size 1000 --sample-seed 2 --include-map
+Filename: build/vectors.csv
+Random seed: 2
+Using a sample of 1000 of the 82115 nodes.
+65203 vectors are on the boundary (they will be pulled back).
+mean rank:               286.23
+mean precision@1:        0.3979
+mean average precision:  0.5974
+```
+
+The mean average precision is not calculated by default since it is quite slow (you can turn it on with the option `--include-map`.  The precision@1 is calculated as a proxy (it's faster).

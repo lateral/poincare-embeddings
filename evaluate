@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import random
 import argparse
 import numpy as np
@@ -94,15 +95,18 @@ if __name__ == '__main__':
                         help='measure mean average precision',
                         action='store_true')
     args = parser.parse_args()
+
+    node_to_offset, vectors = load_vectors(args.vectors)
+    print('Filename: %s' % args.vectors)
+
     node_names, edges, targets = load_graph(args.graph)
     sample_nodes = list(range(len(node_names)))
     if args.sample_size is not None:
-        print('Random seed %i' % args.sample_seed)
+        print('Random seed: %i' % args.sample_seed)
         random.seed(args.sample_seed)
         sample_nodes = random.sample(sample_nodes, args.sample_size)
-    print('Using %i/%i sample nodes' % (len(sample_nodes), len(node_names)))
+    print('Using a sample of %i of the %i nodes.' % (len(sample_nodes), len(node_names)))
 
-    node_to_offset, vectors = load_vectors(args.vectors)
     # order the embedding vectors as per the node enumeration from load_graph
     idx_order = [node_to_offset[node_name] for node_name in node_names]
     vectors = np.ascontiguousarray(vectors[idx_order,:])
@@ -117,6 +121,8 @@ if __name__ == '__main__':
     aps = []
     for source_enum in sample_nodes:
         which_are_targets = np.zeros(len(node_names), dtype=np.bool)
+        if not source_enum in targets:
+            continue  # this node is never the source of an edge
         for target_enum in targets[source_enum]:
             which_are_targets[target_enum] = True
         distances = hyperbolic_distance(vectors[source_enum,:], vectors)
@@ -126,7 +132,8 @@ if __name__ == '__main__':
                                              distances,
                                              which_are_targets)
             aps.append(ap)
-    print('mean rank %.2f' % np.mean(ranks))
-    print('mean precision@1 %.4f' % np.mean(np.array(ranks) == 1))
+    width = 25
+    print('%s%.2f' % ('mean rank:'.ljust(width), np.mean(ranks)))
+    print('%s%.4f' % ('mean precision@1:'.ljust(width), np.mean(np.array(ranks) == 1)))
     if args.include_map:
-        print('mean average precision %.4f' % np.mean(aps))
+        print('%s%.4f' % ('mean average precision:'.ljust(width), np.mean(aps)))
