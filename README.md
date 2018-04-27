@@ -54,6 +54,15 @@ Training data is a two-column tab-separated CSV file without header.  The traini
 
 Vectors are written out as a spaced-separated CSV without header, where the first column is the name of the node.
 
+```
+sen.n.01 -0.07573256650403173837 0.04804740830803629381
+unit_of_measurement.n.01 -0.3194984358578525614 0.5269294142957902365
+chorionic_villus_sampling.n.01 -0.1497520758532252668 0.01760349013420301248
+assay.n.04 -0.3628120882612646686 0.05198792878325033239
+egyptian.n.01 0.1210250472607995836 -0.01964832136051103934
+...
+```
+
 ## Evaluation
 
 The script `evaluate` measures the performance of the trained embeddings:
