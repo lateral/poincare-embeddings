@@ -1,0 +1,132 @@
+import random
+import argparse
+import numpy as np
+from collections import defaultdict
+from sklearn.metrics import average_precision_score
+from helpers import pullback, to_hyperboloid_points, hyperbolic_distance
+
+
+def load_graph(fn):
+    """
+    Given the filename `fn` of a tab-separated CSV (2 cols, no header)
+    representation of a directed graph, return the list of node names (the
+    order defining an enumeration), a list of edges (as pairs of enumerations)
+    and a dictionary mapping each node enum to the list of node enums to which
+    it is connected.
+    """
+    targets = defaultdict(lambda: [])
+    edges = []
+    name_to_enum = defaultdict(lambda: len(name_to_enum))
+
+    with open(fn) as f:
+        for line in f:
+            tail, head = line.strip().split('\t')
+            head_enum = name_to_enum[head]
+            tail_enum = name_to_enum[tail]
+            edges.append((tail_enum, head_enum))
+            targets[tail_enum].append(head_enum)
+
+    name_to_enum = dict(name_to_enum)
+    targets = dict(targets)
+    names = [pair[0] for pair in sorted(name_to_enum.items(), key=lambda pair: pair[1])]
+    return names, edges, targets
+
+
+def load_vectors(fn):
+    """
+    Given the filename `fn` of a space-separated text file in the format:
+        node 1.23234 -1231321
+        ...
+    return a dictionary mapping each node to it's line number, and a 2-D
+    contiguous numpy array of the float data.
+    """
+    vectors = []
+    node_to_offset = dict()
+    for line in open(fn, 'r'):
+        bits = line.split(' ')
+        node = bits[0]
+        vector = [np.float64(bit) for bit in bits[1:]]
+        vectors.append(vector)
+        node_to_offset[node] = len(vectors) - 1
+    return node_to_offset, np.array(vectors, dtype=np.float64)
+
+
+def calculate_ranks(source_enum, distances_from_source, which_are_targets):
+    _ranks = []
+    for target_enum in np.where(which_are_targets)[0]:
+        dist = distances_from_source[target_enum]
+        # select just the non-targets and non-self
+        selector = ~(which_are_targets.copy())
+        selector[source_enum] = False
+        non_target_dists = distances_from_source[selector]
+        rank = (non_target_dists < dist).sum() + 1
+        _ranks.append(rank)
+    return _ranks
+
+
+def calculate_average_precision(source_enum, distances_from_source, which_are_targets):
+    distances = distances_from_source.copy()
+    distances[source_enum] = 1e+12  # otherwise penalising for things have distance zero from themselves!
+    return average_precision_score(which_are_targets, -distances)
+
+
+HELP_STR = """
+Script for evaluating trained embeddings.
+"""
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=HELP_STR)
+    parser.add_argument('--graph',
+                        help='tab-separated CSV (2 cols, no header) of directed graph',
+                        required=True)
+    parser.add_argument('--vectors',
+                        help='space-separated CSV (1st column is node name, '
+                        'no header) of trained embedding',
+                        required=True)
+    parser.add_argument('--sample-seed',
+                        help='seed to initialise RNG before drawing samples',
+                        type=int,
+                        default=1)
+    parser.add_argument('--sample-size',
+                        help='number of nodes to test at (default: no sampling)',
+                        type=int)
+    parser.add_argument('--include-map',
+                        help='measure mean average precision',
+                        action='store_true')
+    args = parser.parse_args()
+    node_names, edges, targets = load_graph(args.graph)
+    sample_nodes = list(range(len(node_names)))
+    if args.sample_size is not None:
+        print('Random seed %i' % args.sample_seed)
+        random.seed(args.sample_seed)
+        sample_nodes = random.sample(sample_nodes, args.sample_size)
+    print('Using %i/%i sample nodes' % (len(sample_nodes), len(node_names)))
+
+    node_to_offset, vectors = load_vectors(args.vectors)
+    # order the embedding vectors as per the node enumeration from load_graph
+    idx_order = [node_to_offset[node_name] for node_name in node_names]
+    vectors = np.ascontiguousarray(vectors[idx_order,:])
+
+    # pull back vectors from the boundary of the disc
+    vectors = pullback(vectors)
+
+    # convert to hyperboloid vectors (easier to compute distance)
+    vectors = to_hyperboloid_points(vectors)
+
+    ranks = []
+    aps = []
+    for source_enum in sample_nodes:
+        which_are_targets = np.zeros(len(node_names), dtype=np.bool)
+        for target_enum in targets[source_enum]:
+            which_are_targets[target_enum] = True
+        distances = hyperbolic_distance(vectors[source_enum,:], vectors)
+        ranks += calculate_ranks(source_enum, distances, which_are_targets)
+        if args.include_map:
+            ap = calculate_average_precision(source_enum,
+                                             distances,
+                                             which_are_targets)
+            aps.append(ap)
+    print('mean rank %.2f' % np.mean(ranks))
+    print('mean precision@1 %.4f' % np.mean(np.array(ranks) == 1))
+    if args.include_map:
+        print('mean average precision %.4f' % np.mean(aps))
