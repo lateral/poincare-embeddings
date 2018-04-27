@@ -19,9 +19,8 @@ For evaluation of the embeddings, you'll need the Python 3 library scikit-learn.
 ## Installation
 
 ```
-git clone https://github.com/facebookresearch/poincare-embeddings
+git clone git@github.com:lateral/poincare-embeddings.git
 cd poincare-embeddings
-mkdir build
 cd build
 cmake ../
 make
