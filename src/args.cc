@@ -12,7 +12,7 @@ Args::Args() {
     end_lr = 0.5;
     dimension = 10;
     checkpoint_interval = -1;
-    distribution_power = 1;
+    distribution_power = 0;
     epochs = 5;
     number_negatives = 10;
     threads = 4;
