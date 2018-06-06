@@ -6,12 +6,19 @@ As in the implementation of the authors, only the objective for embedding taxono
 
 An alternative implementation that uses the hyperboloid model and the exponential map for updates is available [here](https://github.com/lateral/geodesic-poincare-embeddings).
 
+### Example
+
+```
+./poincare -graph ../wordnet/mammal_closure.tsv -number-negatives 20 -epochs 50 -output-vectors vectors.csv -start-lr 0.5 -end-lr 0.5
+```
+
+
 ### Burn-in
 To achieve burn-in, just train twice, initialising the second time with the vectors trained during the first time (i.e. during burn-in).  For example:
 
 ```
-./poincare -graph wordnet/mammal_closure.tsv -number-negatives 2 -epochs 40 -output-vectors vectors-after-burnin.csv -start-lr 0.005 -end-lr 0.005 -distribution-power 1
-./poincare -graph wordnet/mammal_closure.tsv -number-negatives 20 -epochs 500 -input-vectors vectors-after-burnin.csv -output-vectors vectors.csv -start-lr 0.5 -end-lr 0.5 -distribution-power 0
+./poincare -graph ../wordnet/mammal_closure.tsv -number-negatives 2 -epochs 40 -output-vectors vectors-after-burnin.csv -start-lr 0.005 -end-lr 0.005 -distribution-power 1
+./poincare -graph ../wordnet/mammal_closure.tsv -number-negatives 20 -epochs 500 -input-vectors vectors-after-burnin.csv -output-vectors vectors.csv -start-lr 0.5 -end-lr 0.5 -distribution-power 0
 ```
 
 ## Requirements
