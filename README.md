@@ -4,6 +4,8 @@ We include the implementation details that first became clear with the release o
 
 As in the implementation of the authors, only the objective for embedding taxonomies is implemented.  Unlike that implementation, updates are not performed in mini-batches.
 
+An alternative implementation that uses the hyperboloid model and the exponential map for updates is available [here](https://github.com/lateral/geodesic-poincare-embeddings).
+
 ### Burn-in
 To achieve burn-in, just train twice, initialising the second time with the vectors trained during the first time (i.e. during burn-in).  For example:
 
